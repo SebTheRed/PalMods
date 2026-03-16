@@ -1,0 +1,2 @@
+# PalMods
+Palworld Mods
