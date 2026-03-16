@@ -1,0 +1,34 @@
+{
+  "data_schema_version": 1,
+  "world_key": "dedicated_default__example_world",
+  "meta": {
+    "mod_version": "0.1.0-m1",
+    "created_at": 0,
+    "last_saved_at": 0
+  },
+  "pals": {
+    "verified_guid_example": {
+      "version": 1,
+      "species": "Lamball",
+      "personality": {
+        "seed": 123456,
+        "work_attitude": "diligent",
+        "social_preference": "loves_talking",
+        "temperament": "gentle"
+      },
+      "meta": {
+        "first_seen": 0,
+        "last_seen": 0,
+        "home_base_id": null
+      },
+      "verification": {
+        "guid_source": "actor.InstanceId"
+      }
+    }
+  },
+  "guid_verification": {
+    "version": 1,
+    "sources": {},
+    "report": {}
+  }
+}

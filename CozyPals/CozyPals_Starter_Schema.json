@@ -1,0 +1,49 @@
+{
+  "data_schema_version": 1,
+  "world_id": "REPLACE_ME",
+  "pals": {
+    "pal_uid_example": {
+      "version": 1,
+      "species": "Lamball",
+      "type": "Neutral",
+      "personality": {
+        "seed": 12345,
+        "work_attitude": "diligent",
+        "social_preference": "loves_talking",
+        "temperament": "gentle"
+      },
+      "relationship": {
+        "interaction_xp": 0,
+        "talk_count": 0,
+        "pet_count": 0,
+        "cheer_count": 0,
+        "quest_count_completed": 0,
+        "last_pet_time": 0,
+        "last_talk_time": 0,
+        "last_cheer_time": 0,
+        "last_quest_offer_time": 0
+      },
+      "quest": {
+        "active": false,
+        "quest_type": null,
+        "item_id": null,
+        "item_count": 0,
+        "rarity": 0,
+        "offered_at": 0,
+        "expires_at": 0,
+        "reward_trust": 0,
+        "reward_morale": 0
+      },
+      "flags": {
+        "introduced": false,
+        "seen_depressed_once": false,
+        "favorite_request_revealed": false
+      },
+      "meta": {
+        "first_seen": 0,
+        "last_seen": 0,
+        "home_base_id": null
+      }
+    }
+  }
+}

@@ -1,0 +1,804 @@
+CozyPals - Deep ToDo / Design + Research Plan
+=============================================
+
+Project goal
+------------
+Build a Palworld UE4SS-based mod that makes base pals feel socially alive.
+The mod should give each individual pal a persistent personality, contextual dialogue,
+relationship progression, morale/trust interaction effects, and small side-quest/fetch-request loops.
+
+Core vision
+-----------
+1. Each pal should feel like an individual, not just a species template.
+2. Dialogue should depend on species + type + random hidden traits + current mood/work conditions + trust.
+3. Interactions should matter both emotionally and mechanically.
+4. Trust should expand beyond vanilla combat stats into base-life effects.
+5. Data must persist per individual pal across reloads/world sessions.
+6. The mod should be architected so single-player is easy first, while dedicated/co-op support remains possible later.
+
+=====================================================================
+PHASE 0 - GROUND TRUTH / RESEARCH
+=====================================================================
+
+[ ] Confirm the best stable per-pal identifier.
+    Why:
+    - Everything depends on identifying the same pal after reload.
+    Candidates to hunt:
+    - InstanceId
+    - Guid / UID / CharacterID / SaveID / IndividualId
+    - CharacterContainerId + slot + owner fallback
+
+[ ] Use UE4SS Live Viewer to inspect loaded pal actors.
+    Specific search goals:
+    - Search for pal actors/components while standing near base pals.
+    - Restrict to instances only.
+    - Search for properties containing:
+      Guid, UID, ID, Instance, Save, Character, Individual, Container, Slot.
+
+[ ] Use UE4SS object dump and header dump.
+    Deliverables:
+    - UE4SS_ObjectDump.txt
+    - Generated headers for Palworld classes/structs
+    What to search for:
+    - BP_OtomoPalHolderComponent
+    - Worker / BaseCamp / CharacterSaveParameter / PalCharacter / Otomo / Build / Trust / Sanity / Mood
+
+[ ] Identify what object/class best represents an individual base pal.
+    Possible layers:
+    - Actor representing the visible spawned pal
+    - Character save parameter structure
+    - Worker/base assignment component
+    - Party/box container entry
+
+[ ] Find vanilla trust data path.
+    Questions:
+    - What property stores trust?
+    - Is trust on the character actor? save struct? parameter component?
+    - Does the game compute trust buffs from a table or inside code?
+
+[ ] Find work-condition / negative-state data path.
+    We need to locate anything like:
+    - SAN / sanity
+    - depression / weakened / disorder-like conditions
+    - hunger / fatigue / work stress
+    - current task assignment
+    - work suitability / work speed modifiers
+
+[ ] Find player-to-pal interaction hooks.
+    Needed to support:
+    - petting
+    - talking
+    - quest turn-in
+    - cheer-up interaction
+    - future interaction expansion
+
+[ ] Find reusable UI hooks/assets.
+    Preferred reuse:
+    - interaction prompt
+    - floating text / subtitle / chat bubble / toast
+    - existing inspect/detail panels if accessible
+
+---------------------------------------------------------------------
+Immediate research output we want before coding deeper
+---------------------------------------------------------------------
+1. Stable pal UID confirmed or fallback plan selected.
+2. Actor/class map of a base pal and its important components.
+3. Trust storage / trust calculation location identified.
+4. Current mood/work-condition state fields identified.
+5. Likely interaction hook points identified.
+6. Save/load timing plan chosen.
+
+=====================================================================
+PHASE 1 - REPOSITORY / FOUNDATION SETUP
+=====================================================================
+
+[ ] Create repo structure.
+    Suggested structure:
+
+    /CozyPals
+      /docs
+        TODO.txt
+        architecture.md
+        reverse_engineering_notes.md
+        dialogue_design.md
+        trust_design.md
+      /Mods
+        /CozyPals
+          enabled.txt
+          scripts/main.lua
+          scripts/config.lua
+          scripts/logger.lua
+          scripts/discovery.lua
+          scripts/identity.lua
+          scripts/persistence.lua
+          scripts/traits.lua
+          scripts/dialogue.lua
+          scripts/interactions.lua
+          scripts/quests.lua
+          scripts/trust.lua
+          scripts/debug.lua
+      /data
+        sample_save_schema.json
+        dialogue_tables.json
+        species_profiles.json
+        quest_pools.json
+      /tools
+        notes_on_dumps.txt
+      README.md
+
+[ ] Define coding style and logging conventions.
+    Examples:
+    - [CozyPals][INFO]
+    - [CozyPals][WARN]
+    - [CozyPals][ERR ]
+    - [CozyPals][DISCOVERY]
+
+[ ] Add versioning plan from day 1.
+    Examples:
+    - mod_version
+    - data_schema_version
+    - dialogue_schema_version
+
+=====================================================================
+PHASE 2 - PAL IDENTITY / PERSISTENT DATA MODEL
+=====================================================================
+
+Goal:
+Make one individual pal recover the same custom personality/quest history after restart.
+
+Primary design
+--------------
+Use a hybrid model:
+- Runtime tables in Lua for active objects.
+- Persistent external save file for custom mod data.
+- Keyed by a stable per-pal ID if available.
+
+[ ] Define runtime table.
+
+    TrackedPals[pal_uid] = {
+      actor = <live actor ref>,
+      actor_class = "...",
+      species = "...",
+      level = 0,
+      type = "...",
+      derived = {
+        current_trust = 0,
+        current_mood_state = "...",
+        current_work_state = "...",
+        current_negative_condition = nil,
+      },
+      save = <persistent data record>,
+      dirty = false,
+      last_seen = 0,
+    }
+
+[ ] Define persistent data schema.
+
+    pals[pal_uid] = {
+      version = 1,
+      species = "Lamball",
+      personality = {
+        seed = 12345,
+        work_attitude = "diligent",
+        social_preference = "loves_talking",
+        temperament = "gentle",
+      },
+      relationship = {
+        interaction_xp = 0,
+        talk_count = 0,
+        pet_count = 0,
+        cheer_count = 0,
+        quest_count_completed = 0,
+        last_pet_time = 0,
+        last_talk_time = 0,
+        last_cheer_time = 0,
+        last_quest_offer_time = 0,
+      },
+      quest = {
+        active = false,
+        quest_type = nil,
+        item_id = nil,
+        item_count = 0,
+        rarity = 0,
+        offered_at = 0,
+        expires_at = 0,
+        reward_trust = 0,
+        reward_morale = 0,
+      },
+      flags = {
+        introduced = false,
+        seen_depressed_once = false,
+        favorite_request_revealed = false,
+      },
+      meta = {
+        first_seen = 0,
+        last_seen = 0,
+        home_base_id = nil,
+      }
+    }
+
+[ ] Decide save-file granularity.
+    Recommended:
+    - one file per world/save slot
+    - server-owned file for dedicated later
+
+[ ] Implement data migration policy.
+    If fields are missing on load:
+    - fill defaults
+    - preserve unknown fields
+
+[ ] Add dirty-flag persistence system.
+    Save triggers:
+    - new pal discovered
+    - personality rolled
+    - interaction performed
+    - quest assigned/completed/expired
+    - periodic autosave
+
+[ ] Decide serialization format.
+    Preferred:
+    - JSON for readability
+    Alternate:
+    - Lua table return file if easier
+
+[ ] Define fallback UID strategy if stable pal GUID is not exposed.
+    Fallback key candidates:
+    - owner_uid + container_id + slot + species + first_seen
+    - world_id + base_id + species + local spawn sequence
+    Risk:
+    - pals moving containers/slots can break identity
+
+=====================================================================
+PHASE 3 - PERSONALITY / INDIVIDUALITY MODEL
+=====================================================================
+
+Principles
+----------
+Species should matter, but no two pals should feel identical.
+
+[ ] Split personality into layers.
+    Recommended layers:
+    1. Species profile (core flavor)
+    2. Type/element flavor overlay
+    3. Random hidden traits (persistent)
+    4. Current condition/mood/work-state overlay
+
+[ ] Define randomized hidden traits.
+    Work attitude candidates:
+    - diligent
+    - proud
+    - playful
+    - anxious
+    - lazy
+    - clingy
+    - stoic
+    - chaotic
+    - sensitive
+    - perfectionist
+
+[ ] Define social preference candidates.
+    - loves_petting
+    - loves_talking
+    - loves_fetch_quests
+    - shy_but_warms_up
+    - gift_focused
+    - independent
+    - praise_seeking
+    - comfort_seeking
+
+[ ] Define optional temperament axis.
+    - gentle
+    - bold
+    - moody
+    - sunny
+    - timid
+    - stubborn
+
+[ ] Choose trait roll method.
+    Strong recommendation:
+    - roll once per pal
+    - save the result permanently
+    - optionally derive from pal_uid-seeded RNG for determinism
+
+[ ] Determine whether certain species bias trait weights.
+    Example:
+    - Depresso more likely moody/stoic
+    - Monkey more likely playful/clingy
+    - Penking more likely proud/dignified
+
+[ ] Decide whether alpha/lucky status influences personality.
+    Possible flavor:
+    - alpha pals more confident or demanding
+    - lucky pals more quirky or excitable
+
+=====================================================================
+PHASE 4 - DIALOGUE SYSTEM DESIGN
+=====================================================================
+
+Design goals
+------------
+Dialogue should feel reactive, personal, and cozy without requiring a huge branching UI.
+
+[ ] Define dialogue schema.
+    Suggested rule keys:
+    - interaction_type
+    - species
+    - type
+    - work_attitude
+    - social_preference
+    - trust_tier
+    - mood_state
+    - work_state
+    - negative_condition
+    - time_of_day
+    - weather (future)
+
+[ ] Define interaction types.
+    Core v1:
+    - pet
+    - talk
+    - cheer_up
+    - quest_offer
+    - quest_progress
+    - quest_complete
+    - quest_expire
+    - greeting
+    - idle_ambient (future)
+
+[ ] Define trust tiers.
+    Example:
+    - wary
+    - familiar
+    - friendly
+    - attached
+    - loyal
+    - devoted
+
+[ ] Define mood/state buckets.
+    Example:
+    - content
+    - tired
+    - hungry
+    - stressed
+    - sad
+    - sick
+    - overworked
+    - excited
+    - idle_relaxed
+
+[ ] Define work-state buckets.
+    Example:
+    - idle
+    - transporting
+    - crafting
+    - farming
+    - sleeping
+    - eating
+    - resting
+    - assigned_but_stuck
+
+[ ] Decide line-selection method.
+    Recommended:
+    - collect matching lines by conditions
+    - weight by specificity
+    - random select from top matches
+    - avoid repeats using recent-line history
+
+[ ] Add dialogue memory protections.
+    Needed:
+    - recent line cooldown
+    - rare special lines
+    - first-time intro lines
+    - low-frequency quest lines
+
+[ ] Draft species profile sheets.
+    For each species eventually define:
+    - social tone
+    - likely emotions
+    - typical speech texture
+    - likely quest preferences
+
+[ ] Build first dialogue packs for a few anchor species.
+    Start with a small set:
+    - Lamball
+    - Monkey-like pal user mentioned
+    - Depresso
+    - Penking
+    - one fire type
+    - one grass type
+
+=====================================================================
+PHASE 5 - TRUST EXPANSION DESIGN
+=====================================================================
+
+Vanilla trust note
+------------------
+Vanilla trust already affects combat-oriented stats. Our mod should add cozy/base-life effects
+without making trust progression absurdly overpowered.
+
+[ ] Decide trust model policy.
+    Recommended:
+    - preserve vanilla trust effects
+    - add modded secondary effects on top
+
+[ ] Define modded trust effects.
+    Candidate effects:
+    - work_speed_bonus
+    - slower_SAN_loss
+    - faster_mood_recovery
+    - reduced_negative_condition_chance
+    - better response to cheer_up
+    - stronger quest reward multipliers
+    - more affectionate dialogue unlocks
+
+[ ] Determine implementation path.
+    Options:
+    1. Hook/modify trust calculation directly if accessible.
+    2. Add derived buffs from trust at runtime.
+    3. Hybrid approach.
+
+[ ] Build trust bonus tables.
+    Example design:
+    - low trust: small/no bonus
+    - mid trust: mild work and morale stability bonus
+    - high trust: stronger reliability / recovery bonus
+    - max trust: special behavior unlocks, not just more raw stats
+
+[ ] Add balance limits.
+    Suggested controls:
+    - diminishing returns above certain trust thresholds
+    - daily caps on social gain
+    - quest cooldowns
+    - interaction cooldowns
+
+[ ] Decide whether trust can exceed vanilla cap only if 99-cap mod layer is active.
+    Need to investigate:
+    - can we safely extend trust cap ourselves
+    - what UI or data assumptions break if trust > vanilla maximum
+
+=====================================================================
+PHASE 6 - SOCIAL INTERACTIONS
+=====================================================================
+
+[ ] Pet interaction.
+    Output:
+    - dialogue line
+    - small trust gain
+    - small morale/SAN effect
+    - cooldown
+    Optional:
+    - species-specific animation/sound if accessible later
+
+[ ] Talk interaction.
+    Output:
+    - richer contextual dialogue
+    - tiny trust gain
+    - chance to reveal hints about wants/problems
+    - maybe unlock quest offer chance
+
+[ ] Cheer Up interaction.
+    Conditions:
+    - strongest when pal has bad mood/condition
+    Output:
+    - unique dialogue
+    - stronger morale recovery
+    - maybe reduced negative-status duration chance
+
+[ ] Greeting / ambient interaction.
+    Future:
+    - high-trust pals greet player when approached
+    - low-trust pals stay brief/cautious
+
+[ ] Determine how interactions are triggered.
+    Possibilities:
+    - reuse existing pet/interact hook
+    - add alternate interact state if certain modifier pressed
+    - cycle through interaction modes
+    - piggyback on existing prompt and inspect state
+
+=====================================================================
+PHASE 7 - FETCH QUEST / REQUEST SYSTEM
+=====================================================================
+
+Vision
+------
+Instead of generic gifts, pals occasionally ask for specific attainable items.
+This becomes the highest-trust-yield social loop.
+
+[ ] Define quest types for v1.
+    Start simple:
+    - fetch item request only
+
+[ ] Define item-pool tiers by pal level.
+    Rules desired:
+    - cap maximum request rarity by pal level
+    - allow any lower-tier item under that cap
+    - keep requests believable and attainable
+
+[ ] Build rarity tiers.
+    Example:
+    - common
+    - uncommon
+    - rare
+    - elite / very rare
+
+[ ] Build item families.
+    Candidate categories:
+    - berries / food
+    - cooked meals
+    - natural materials
+    - ingots / crafted goods
+    - medicine
+    - species-flavored rare drops (feathers, fur, etc.)
+
+[ ] Map rarity to reward.
+    Reward channels:
+    - trust gain
+    - morale gain
+    - special dialogue
+    - possibly temporary buff
+
+[ ] Determine request generation rules.
+    Suggested filters:
+    - pal level
+    - species/theme
+    - type/element
+    - current mood/need state
+    - quest cooldown
+    - trust threshold minimum
+
+[ ] Determine request limits.
+    Recommended:
+    - 1 active request per pal
+    - limit active requests globally per base
+    - cooldown after completion or expiry
+
+[ ] Determine request resolution UX.
+    Need to answer:
+    - does the player manually hand in with interaction?
+    - does the game auto-detect item in inventory while talking?
+    - do we require item stack count in inventory then consume?
+
+[ ] Determine failure/expiry behavior.
+    Suggested:
+    - mild disappointment dialogue only
+    - no harsh punishment
+    - small cooldown before next request
+
+[ ] Decide how favorite requests work.
+    Future idea:
+    - some species/traits love certain categories and reward more trust
+
+=====================================================================
+PHASE 8 - MOOD / CONDITION SYSTEM INTEGRATION
+=====================================================================
+
+[ ] Identify actual vanilla mood/condition fields.
+    We should read the real game state where possible instead of cloning it.
+
+[ ] Decide what custom morale means.
+    Recommendation:
+    - do not duplicate vanilla SAN if avoidable
+    - use custom morale only as a lightweight overlay for extra cozy logic
+
+[ ] Define morale effect responsibilities.
+    Example:
+    - modifies dialogue flavor
+    - modifies quest offer chance
+    - modifies response intensity to interaction
+
+[ ] Define condition recovery links.
+    Example:
+    - Cheer Up stronger when sad/stressed
+    - Comfort interactions reduce chance of recurring bad state
+    - High trust improves recovery multipliers
+
+=====================================================================
+PHASE 9 - PERSISTENCE / SAVE-LOAD PIPELINE
+=====================================================================
+
+[ ] Build save manager.
+    Functions needed:
+    - load_world_data()
+    - save_world_data()
+    - get_or_create_pal_record(pal_uid)
+    - mark_dirty(pal_uid)
+    - migrate_data_if_needed()
+
+[ ] Decide save timing.
+    Recommendation:
+    - load on player possession / world ready
+    - flush after important state changes
+    - periodic autosave every X seconds if dirty
+
+[ ] Add corruption safety.
+    Strongly recommended:
+    - write temp file first
+    - backup previous file
+    - rename on success
+
+[ ] Support world separation.
+    Save file key should include:
+    - world id / save slot id
+    - maybe host/server identity
+
+=====================================================================
+PHASE 10 - DEBUG / DISCOVERY TOOLS
+=====================================================================
+
+[ ] Build discovery mode toggles.
+    Useful flags:
+    - log_new_pal_actors
+    - log_candidate_uid_props
+    - log_trust_reads
+    - log_interaction_hooks
+    - log_quest_generation
+
+[ ] Build per-pal debug print command.
+    Output should show:
+    - pal uid
+    - species
+    - trust
+    - mood/work state
+    - personality traits
+    - active quest
+
+[ ] Build safe logging throttles.
+    Avoid flooding logs when many actors spawn.
+
+[ ] Build dump search checklist.
+    Search terms:
+    - Trust
+    - Sanity
+    - Mood
+    - Work
+    - Otomo
+    - CharacterSaveParameter
+    - BaseCamp
+    - Worker
+    - Status
+    - Condition
+
+=====================================================================
+PHASE 11 - TESTING PLAN
+=====================================================================
+
+[ ] Test persistence with one known pal across restart.
+[ ] Test multiple same-species pals and ensure unique personalities persist.
+[ ] Test quest assignment/turn-in/expiry persistence.
+[ ] Test trust gain cooldowns.
+[ ] Test negative-condition recovery interactions.
+[ ] Test high-trust behavior unlocks.
+[ ] Test mod updates with save migration.
+[ ] Test dedicated/co-op assumptions later.
+
+Important edge cases
+--------------------
+[ ] Pal moved between box/base/party
+[ ] Pal removed from base and later returned
+[ ] Pal sold/released/dead
+[ ] Same species duplicated many times
+[ ] World rollback or save restore
+[ ] Mod disabled then re-enabled
+[ ] Vanilla patch renames properties/classes
+
+=====================================================================
+PHASE 12 - INITIAL CONTENT PLOTTING
+=====================================================================
+
+Starter personality matrix
+--------------------------
+Work attitudes:
+- diligent
+- proud
+- playful
+- anxious
+- lazy
+- clingy
+- stoic
+- chaotic
+- sensitive
+- perfectionist
+
+Social preferences:
+- loves_petting
+- loves_talking
+- loves_fetch_quests
+- shy_but_warms_up
+- gift_focused
+- independent
+- praise_seeking
+- comfort_seeking
+
+Starter trust effects to prototype
+----------------------------------
+- +work speed
+- -SAN drain
+- +mood recovery
+- +interaction efficacy
+- +quest affection rewards
+
+Starter trust tiers
+-------------------
+- wary
+- familiar
+- friendly
+- attached
+- loyal
+- devoted
+
+Starter interaction set
+-----------------------
+- pet
+- talk
+- cheer_up
+- fetch_request_offer
+- fetch_request_complete
+
+Starter mood states
+-------------------
+- content
+- tired
+- hungry
+- stressed
+- sad
+- sick
+- overworked
+- excited
+
+Starter quest rarity tiers
+--------------------------
+- common
+- uncommon
+- rare
+- special
+
+Starter docs to write early
+---------------------------
+[ ] architecture.md
+[ ] data_schema.md
+[ ] dialogue_schema.md
+[ ] reverse_engineering_notes.md
+[ ] trust_balance_notes.md
+
+=====================================================================
+FIRST MILESTONE DEFINITION
+=====================================================================
+
+Milestone 1: "One pal keeps its identity"
+------------------------------------------
+Success criteria:
+[ ] Detect one specific base pal at runtime.
+[ ] Read a stable unique ID (or best fallback key).
+[ ] Roll and store a personality for that pal.
+[ ] Save to disk.
+[ ] Restart game/world.
+[ ] Reload the same pal and recover the same personality.
+
+Milestone 2: "One pal can talk"
+--------------------------------
+[ ] Trigger one custom interaction.
+[ ] Show one contextual dialogue line.
+[ ] Apply tiny trust/morale effect.
+[ ] Persist interaction counts.
+
+Milestone 3: "One pal can ask for something"
+---------------------------------------------
+[ ] Generate one fetch request based on pal level.
+[ ] Detect inventory item turn-in.
+[ ] Consume item.
+[ ] Reward trust/morale.
+[ ] Save completion history.
+
+=====================================================================
+FINAL NOTES
+=====================================================================
+
+Strong recommendation:
+Do not write huge amounts of dialogue content until the following are proven:
+1. pal identity is stable
+2. trust/mood/work data can be read reliably
+3. interaction hook points are practical
+4. save/load works safely
+
+Once those four are real, content production can ramp up very fast.
