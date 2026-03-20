@@ -1,0 +1,122 @@
+{
+    "trust_bands": {
+        "trust_01_20": {
+            "trust_min": 1,
+            "trust_max": 20,
+            "item_count_in_band": 51,
+            "total_weight": 4415.0,
+            "rarity_weight_totals": {
+                "common": 4100.0,
+                "uncommon": 315.0
+            },
+            "rarity_probability_share": {
+                "common": 0.9286523216,
+                "uncommon": 0.0713476784
+            },
+            "allowed_rarities": [
+                "common",
+                "uncommon"
+            ]
+        },
+        "trust_21_40": {
+            "trust_min": 21,
+            "trust_max": 40,
+            "item_count_in_band": 51,
+            "total_weight": 4485.0,
+            "rarity_weight_totals": {
+                "common": 4100.0,
+                "uncommon": 385.0
+            },
+            "rarity_probability_share": {
+                "common": 0.9141583055,
+                "uncommon": 0.0858416945
+            },
+            "allowed_rarities": [
+                "common",
+                "uncommon"
+            ]
+        },
+        "trust_41_60": {
+            "trust_min": 41,
+            "trust_max": 60,
+            "item_count_in_band": 65,
+            "total_weight": 4775.5,
+            "rarity_weight_totals": {
+                "common": 4100.0,
+                "rare": 220.5,
+                "uncommon": 455.0
+            },
+            "rarity_probability_share": {
+                "common": 0.8585488431,
+                "rare": 0.0461731756,
+                "uncommon": 0.0952779814
+            },
+            "allowed_rarities": [
+                "common",
+                "rare",
+                "uncommon"
+            ]
+        },
+        "trust_61_80": {
+            "trust_min": 61,
+            "trust_max": 80,
+            "item_count_in_band": 75,
+            "total_weight": 5061.5,
+            "rarity_weight_totals": {
+                "common": 4100.0,
+                "epic": 90.0,
+                "rare": 346.5,
+                "uncommon": 525.0
+            },
+            "rarity_probability_share": {
+                "common": 0.8100365504,
+                "epic": 0.0177812901,
+                "rare": 0.068457967,
+                "uncommon": 0.1037241924
+            },
+            "allowed_rarities": [
+                "common",
+                "epic",
+                "rare",
+                "uncommon"
+            ]
+        },
+        "trust_81_99": {
+            "trust_min": 81,
+            "trust_max": 99,
+            "item_count_in_band": 84,
+            "total_weight": 5424.2,
+            "rarity_weight_totals": {
+                "common": 4100.0,
+                "epic": 165.0,
+                "legendary": 56.7,
+                "rare": 472.5,
+                "uncommon": 630.0
+            },
+            "rarity_probability_share": {
+                "common": 0.7558718336,
+                "epic": 0.0304192323,
+                "legendary": 0.0104531544,
+                "rare": 0.0871096199,
+                "uncommon": 0.1161461598
+            },
+            "allowed_rarities": [
+                "common",
+                "epic",
+                "legendary",
+                "rare",
+                "uncommon"
+            ]
+        }
+    },
+    "eligible_items_total": 84,
+    "eligible_items_total_pre_dedupe": 84,
+    "dedupe_policy": "none",
+    "eligible_by_rarity": {
+        "common": 41,
+        "epic": 10,
+        "legendary": 9,
+        "rare": 14,
+        "uncommon": 10
+    }
+}

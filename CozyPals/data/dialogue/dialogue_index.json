@@ -1,0 +1,398 @@
+{
+    "version": 10,
+    "generated_at_utc": "2026-03-20T19:15:17Z",
+    "target_line_volume": "3k-5k",
+    "actual_line_count": 4518,
+    "composition": {
+        "archetype_lines": 2790,
+        "species_lines": 1728,
+        "archetype_ratio": 0.6175,
+        "species_ratio": 0.3825
+    },
+    "enums": {
+        "genus_category": [
+            "bird",
+            "dragon",
+            "fish",
+            "fourlegged",
+            "humanoid",
+            "monster",
+            "none",
+            "other"
+        ],
+        "element_primary": [
+            "dark",
+            "dragon",
+            "ground",
+            "electric",
+            "fire",
+            "ice",
+            "grass",
+            "neutral",
+            "water"
+        ],
+        "size_bucket": [
+            "small",
+            "medium",
+            "large"
+        ],
+        "gender_style": [
+            "neutral_style",
+            "masculine_style",
+            "feminine_style"
+        ],
+        "activity_state": [
+            "working",
+            "idle",
+            "eating",
+            "sleeping",
+            "injured",
+            "depressed"
+        ],
+        "environment_tags": [
+            "time_morning",
+            "time_night",
+            "weather_rain",
+            "weather_sunny",
+            "weather_storm",
+            "env_firelight",
+            "env_quiet_base",
+            "env_busy_base",
+            "env_cozy_indoors"
+        ],
+        "topic_hook": [
+            "food",
+            "coworkers",
+            "comfort",
+            "work",
+            "player_affection",
+            "gifts_requests",
+            "weather",
+            "tiredness",
+            "pride",
+            "loneliness",
+            "playfulness",
+            "fetch_ask",
+            "fetch_thanks"
+        ],
+        "emotional_tone": [
+            "cheerful",
+            "shy",
+            "grumpy",
+            "affectionate",
+            "tired",
+            "worried",
+            "proud",
+            "clingy",
+            "cozy",
+            "gloomy"
+        ],
+        "species_vibe": [
+            "species_playful",
+            "species_timid",
+            "species_regal",
+            "species_mischievous",
+            "species_gentle",
+            "species_greedy",
+            "species_sleepy"
+        ],
+        "social_style": [
+            "social_loves_petting",
+            "social_loves_talking",
+            "social_loves_quests",
+            "social_shy",
+            "social_independent",
+            "social_clingy",
+            "social_praise_seeking"
+        ],
+        "triggers": [
+            "talk",
+            "pet",
+            "assign_work",
+            "unassign_work",
+            "trust_up",
+            "trust_milestone",
+            "san_low",
+            "san_recover",
+            "sick_onset",
+            "sick_recover",
+            "ranch_success",
+            "work_complete",
+            "quest_request",
+            "quest_thanks"
+        ]
+    },
+    "thresholds": {
+        "trust_bands": [
+            {
+                "id": "trust_01_20",
+                "label": "distant",
+                "min": 1,
+                "max": 20,
+                "tone": "guarded"
+            },
+            {
+                "id": "trust_21_40",
+                "label": "wary",
+                "min": 21,
+                "max": 40,
+                "tone": "cool"
+            },
+            {
+                "id": "trust_41_60",
+                "label": "warming",
+                "min": 41,
+                "max": 60,
+                "tone": "open"
+            },
+            {
+                "id": "trust_61_80",
+                "label": "friendly",
+                "min": 61,
+                "max": 80,
+                "tone": "cozy"
+            },
+            {
+                "id": "trust_81_99",
+                "label": "bonded",
+                "min": 81,
+                "max": 99,
+                "tone": "devoted"
+            }
+        ],
+        "san_bands": [
+            {
+                "id": "san_low",
+                "label": "low",
+                "min": 0,
+                "max": 39,
+                "tone": "strained"
+            },
+            {
+                "id": "san_mid",
+                "label": "mid",
+                "min": 40,
+                "max": 79,
+                "tone": "steady"
+            },
+            {
+                "id": "san_high",
+                "label": "high",
+                "min": 80,
+                "max": 100,
+                "tone": "calm"
+            }
+        ]
+    },
+    "trigger_registry": {
+        "core": [
+            "talk",
+            "pet",
+            "assign_work",
+            "unassign_work",
+            "trust_up",
+            "trust_milestone",
+            "san_low",
+            "san_recover",
+            "sick_onset",
+            "sick_recover",
+            "ranch_success",
+            "work_complete"
+        ],
+        "notes": "Core 12 trigger surfaces for v1 dataset coverage."
+    },
+    "token_registry": {
+        "required": [
+            "{pal_name}",
+            "{player_name}",
+            "{item_name}",
+            "{location_name}",
+            "{work_type}"
+        ],
+        "optional_context": [
+            "{favorite_food}",
+            "{coworker_name}",
+            "{base_zone}"
+        ],
+        "fallback_policy": "If token values are unavailable at runtime, replace with safe generic text and keep line valid."
+    },
+    "file_manifest": {
+        "species_profiles": "species_profiles.jsonl",
+        "variant_alias_overrides": "variant_alias_overrides.json",
+        "dialogue_lines": "dialogue_lines.jsonl",
+        "dialogue_all_lines": "dialogue_all_lines.jsonl",
+        "dialogue_fetch_request_lines": "dialogue_fetch_request_lines.jsonl",
+        "dialogue_fetch_thanks_lines": "dialogue_fetch_thanks_lines.jsonl",
+        "generation_notes": "generation_notes.md",
+        "fetch_items_master": "fetch_items_master.jsonl",
+        "fetch_item_draw_rules": "fetch_item_draw_rules.json",
+        "fetch_item_roll_table_by_trust": "fetch_item_roll_table_by_trust.jsonl",
+        "fetch_item_roll_summary": "fetch_item_roll_summary.json",
+        "fetch_generation_notes": "fetch_generation_notes.md"
+    },
+    "quality_gate_thresholds": {
+        "schema_validity_required": true,
+        "min_lines_per_trigger": 180,
+        "min_talk_pet_per_trust_san_size_cell": 2,
+        "context_axes_required_per_line": 3,
+        "repeat_lockout_min": 4,
+        "alias_resolution_required": true,
+        "token_resolution_required": true
+    },
+    "line_template": {
+        "speaker_identity": [
+            "species_scope",
+            "genus_category",
+            "element_primary",
+            "gender_style",
+            "size_bucket"
+        ],
+        "contextual_axes": [
+            "activity_state",
+            "environment_tags",
+            "social_tags"
+        ],
+        "content_axes": [
+            "topic_hook",
+            "species_vibe",
+            "personality_tags",
+            "hook_tags"
+        ],
+        "emotional_axes": [
+            "trust_band",
+            "san_band",
+            "emotional_tone",
+            "social_style"
+        ]
+    },
+    "hook_categories": {
+        "player_relationship": [
+            "player_nearby_happy",
+            "player_nearby_needy",
+            "player_nearby_shy",
+            "trust_high_affection",
+            "trust_low_uncertain"
+        ],
+        "coworkers_base_social": [
+            "coworkers_friendly",
+            "coworkers_annoyed",
+            "coworkers_team_pride",
+            "coworkers_lonely",
+            "coworkers_gossip",
+            "coworkers_protective"
+        ],
+        "food_hunger_cravings": [
+            "food_hungry",
+            "food_satisfied",
+            "food_craving",
+            "food_comfort",
+            "food_bored",
+            "food_jealous"
+        ],
+        "cozy_home_comfort": [
+            "cozy_warm",
+            "cozy_sleepy",
+            "cozy_rain",
+            "cozy_safe",
+            "cozy_home_pride",
+            "cozy_wants_comfort"
+        ],
+        "work_chores_pride": [
+            "work_proud",
+            "work_tired",
+            "work_bored",
+            "work_busy",
+            "work_recognized",
+            "work_overwhelmed",
+            "work_wants_break"
+        ],
+        "mood_mental_state": [
+            "mood_gloomy",
+            "mood_anxious",
+            "mood_low_energy",
+            "mood_comforted",
+            "mood_recovering",
+            "mood_fragile"
+        ],
+        "species_flavor": [
+            "species_playful",
+            "species_timid",
+            "species_regal",
+            "species_mischievous",
+            "species_gentle",
+            "species_greedy",
+            "species_sleepy"
+        ],
+        "social_preferences": [
+            "social_loves_petting",
+            "social_loves_talking",
+            "social_loves_quests",
+            "social_shy",
+            "social_independent",
+            "social_clingy",
+            "social_praise_seeking"
+        ],
+        "mini_request_hooks": [
+            "quest_request_shy",
+            "quest_request_excited",
+            "quest_request_comfort",
+            "quest_request_practical",
+            "quest_request_trusting",
+            "quest_request_embarrassed"
+        ],
+        "time_weather_environment": [
+            "time_morning",
+            "time_night",
+            "weather_rain",
+            "weather_sunny",
+            "weather_storm",
+            "env_firelight",
+            "env_quiet_base",
+            "env_busy_base",
+            "env_cozy_indoors"
+        ]
+    },
+    "total_line_count_including_fetch": 4518,
+    "fetch_line_count": 792,
+    "core_composition": {
+        "archetype_lines": 2430,
+        "species_lines": 1296,
+        "archetype_ratio": 0.6522,
+        "species_ratio": 0.3478
+    },
+    "file_line_counts": {
+        "dialogue_lines": 3726,
+        "dialogue_all_lines": 4518,
+        "dialogue_fetch_request_lines": 396,
+        "dialogue_fetch_thanks_lines": 396
+    },
+    "core_line_count": 3726,
+    "fetch_item_dataset": {
+        "master_items_total": 1973,
+        "eligible_fetch_items_total": 84,
+        "eligible_fetch_items_total_pre_dedupe": 84,
+        "dedupe_policy": "none",
+        "eligible_by_rarity": {
+            "common": 41,
+            "epic": 10,
+            "legendary": 9,
+            "rare": 14,
+            "uncommon": 10
+        },
+        "policy": {
+            "non_crafting_focus": true,
+            "trust_gate_not_rarity_bias": true,
+            "legendary_unlocked_only_at": "trust_81_99",
+            "low_trust_allowed_rarities": [
+                "common",
+                "uncommon"
+            ]
+        },
+        "files": {
+            "master": "fetch_items_master.jsonl",
+            "rules": "fetch_item_draw_rules.json",
+            "roll_table": "fetch_item_roll_table_by_trust.jsonl",
+            "summary": "fetch_item_roll_summary.json"
+        }
+    }
+}

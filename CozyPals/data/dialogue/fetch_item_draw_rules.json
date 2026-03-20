@@ -1,0 +1,131 @@
+{
+    "version": 1,
+    "generated_at_utc": "2026-03-20T19:15:17Z",
+    "sources": {
+        "paldb_items": "https://paldb.cc/en/Items",
+        "wiki_items_reference": "https://palworld.wiki.gg/wiki/Items"
+    },
+    "non_crafting_focus": true,
+    "notes": [
+        "Master file includes all parsed items from source snapshot.",
+        "Fetch pool is restricted to gatherable and non-crafted items.",
+        "Trust gates rarity availability; common remains dominant at all trust levels."
+    ],
+    "trust_points_by_rarity": {
+        "common": 1,
+        "uncommon": 2,
+        "rare": 4,
+        "epic": 7,
+        "legendary": 12,
+        "special": 0
+    },
+    "base_rarity_weight": {
+        "common": 100.0,
+        "uncommon": 70.0,
+        "rare": 45.0,
+        "epic": 30.0,
+        "legendary": 18.0,
+        "special": 0.0
+    },
+    "trust_rarity_multiplier": {
+        "trust_01_20": {
+            "common": 1.0,
+            "uncommon": 0.45,
+            "rare": 0.0,
+            "epic": 0.0,
+            "legendary": 0.0,
+            "special": 0.0
+        },
+        "trust_21_40": {
+            "common": 1.0,
+            "uncommon": 0.55,
+            "rare": 0.0,
+            "epic": 0.0,
+            "legendary": 0.0,
+            "special": 0.0
+        },
+        "trust_41_60": {
+            "common": 1.0,
+            "uncommon": 0.65,
+            "rare": 0.35,
+            "epic": 0.0,
+            "legendary": 0.0,
+            "special": 0.0
+        },
+        "trust_61_80": {
+            "common": 1.0,
+            "uncommon": 0.75,
+            "rare": 0.55,
+            "epic": 0.3,
+            "legendary": 0.0,
+            "special": 0.0
+        },
+        "trust_81_99": {
+            "common": 1.0,
+            "uncommon": 0.9,
+            "rare": 0.75,
+            "epic": 0.55,
+            "legendary": 0.35,
+            "special": 0.0
+        }
+    },
+    "allowed_icon_groups_for_fetch": [
+        "Food",
+        "Material",
+        "food"
+    ],
+    "filters": {
+        "blocked_keyword_regex": "(token|schematic|blueprint|saddle|harness|ticket|manual|effigy|emblem|costume|quest|bounty|dummy|npc|test|converter|sphere|glider|armor|helm|helmet|weapon|ammo|bow|rifle|sword|katana|shotgun|spear|launcher|pistol|baton|grenade|mine|trap|rod|coin|implant|module|relic|jewelry|necklace|pendant|ring|crown|goggles|hat|boots|gloves|medal|certificate|halloween)",
+        "crafted_regex": "(baked|fried|grilled|stew|roast|saute|saute|burger|gyoza|fries|salad|soup|chowder|pizza|sandwich|cake|jam|bread|skewer|noodle|pasta|pie|pudding|sundae|latte|tea|coffee|med\\b|medicine|medical|juice|wiping|mind\\s*control|gunpowder|ingot|cloth|nail|circuit|board|polymer|cement|pal\\s*metal|alloy|plasteel|processed|refined|kit|hot\\s+milk|marinated|nikujaga|quiche|bacon|omelet|omelette|toast|pickled|stir[-\\s]?fried|charcoal)",
+        "gatherable_signal_regex": "(berry|berries|wheat|tomato|lettuce|mushroom|honey|milk|egg|meat|fish|kelpsea|dumud|ore|coal|sulfur|quartz|stone|wood|fiber|paldium|crude\\s*oil|pal\\s*oil|ancient\\s*civilization\\s*(parts|core)|pal\\s*fluid|fluid|horn|bone|claw|fang|pelt|wool|leather|hide|organ|flower|ruby|sapphire|emerald|diamond|dragon\\s*stone|precious|predator\\s*core)",
+        "internal_placeholder_name_regex": "\\b[A-Za-z]+\\d+\\b"
+    },
+    "trust_band_gates": {
+        "trust_01_20": {
+            "trust_min": 1,
+            "trust_max": 20,
+            "allowed_rarities": [
+                "common",
+                "uncommon"
+            ]
+        },
+        "trust_21_40": {
+            "trust_min": 21,
+            "trust_max": 40,
+            "allowed_rarities": [
+                "common",
+                "uncommon"
+            ]
+        },
+        "trust_41_60": {
+            "trust_min": 41,
+            "trust_max": 60,
+            "allowed_rarities": [
+                "common",
+                "uncommon",
+                "rare"
+            ]
+        },
+        "trust_61_80": {
+            "trust_min": 61,
+            "trust_max": 80,
+            "allowed_rarities": [
+                "common",
+                "uncommon",
+                "rare",
+                "epic"
+            ]
+        },
+        "trust_81_99": {
+            "trust_min": 81,
+            "trust_max": 99,
+            "allowed_rarities": [
+                "common",
+                "uncommon",
+                "rare",
+                "epic",
+                "legendary"
+            ]
+        }
+    }
+}

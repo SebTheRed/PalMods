@@ -1,0 +1,26 @@
+﻿{
+    "version":  1,
+    "notes":  "Explicit alias corrections applied after heuristic prefix/suffix stripping.",
+    "overrides":  {
+                      "GYM_ElecPanda_Otomo":  "ElecPanda",
+                      "Quest_Farmer03_SheepBall":  "SheepBall",
+                      "Quest_Farmer03_PinkCat":  "PinkCat",
+                      "GYM_BlackGriffon_2_Avatar":  "BlackGriffon",
+                      "GYM_MoonQueen_2_Servant":  "MoonQueen",
+                      "RAID_YakushimaBoss002_Hand_Left":  "YakushimaBoss002",
+                      "RAID_YakushimaBoss002_Hand_Right":  "YakushimaBoss002",
+                      "RAID_YakushimaBoss002_Head":  "YakushimaBoss002",
+                      "RAID_YakushimaBoss002_Hand_Left_2":  "YakushimaBoss002",
+                      "RAID_YakushimaBoss002_Hand_Right_2":  "YakushimaBoss002",
+                      "RAID_YakushimaBoss002_Head_2":  "YakushimaBoss002",
+                      "RAID_YakushimaBoss001_Green":  "YakushimaBoss001",
+                      "RAID_YakushimaBoss001_Green_2":  "YakushimaBoss001",
+                      "RAID_LegendDeer_2":  "LegendDeer",
+                      "RAID_KingBahamut_Dragon_2":  "KingBahamut_Dragon",
+                      "RAID_NightLady_Dark_2":  "NightLady_Dark",
+                      "BOSS_YakushimaBoss001":  "YakushimaBoss001",
+                      "BOSS_BrownRabbit":  "BrownRabbit",
+                      "Boss_Anubis":  "Anubis",
+                      "BOSS_BlackGriffon":  "BlackGriffon"
+                  }
+}
