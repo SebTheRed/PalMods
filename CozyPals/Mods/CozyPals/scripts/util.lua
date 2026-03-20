@@ -22,6 +22,16 @@ function Util.safe_tostring(value)
     return "<unprintable>"
 end
 
+function Util.is_unreal_param_text(text)
+    local value = tostring(text or "")
+    return string.match(value, "^RemoteUnrealParam:") ~= nil or string.match(value, "^LocalUnrealParam:") ~= nil
+end
+
+function Util.is_uobject_text(text)
+    local value = tostring(text or "")
+    return string.match(value, "^UObject:%s") ~= nil
+end
+
 function Util.contains_text(text, needle)
     if text == nil or needle == nil then
         return false

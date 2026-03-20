@@ -4,7 +4,7 @@ local Config = {
     data_schema_version = 1,
 
     authority = {
-        mode = "auto", -- auto | force_server | force_client
+        mode = "force_server", -- auto | force_server | force_client
         allow_unknown_as_server = false,
     },
 
@@ -14,7 +14,7 @@ local Config = {
     },
 
     logging = {
-        level = "DISCOVERY", -- ERR | WARN | INFO | DEBUG | DISCOVERY
+        level = "INFO", -- ERR | WARN | INFO | DEBUG | DISCOVERY
         default_throttle_seconds = 5,
     },
 
@@ -27,6 +27,15 @@ local Config = {
         flush_on_dirty = false,
     },
 
+    native_bridge = {
+        targets_file = "Mods/CozyPals/data/native_targets.txt",
+        identities_file = "Mods/CozyPals/data/native_identities.txt",
+        max_targets = 32,
+        trusted_identity_source_substrings = {
+            "CharacterParameterComponent.IndividualParameter",
+        },
+    },
+
     verification = {
         require_run_count = 2,
         require_world_cycle_count = 2,
@@ -35,21 +44,62 @@ local Config = {
 
     discovery = {
         enabled = true,
-        log_top_candidates = 3,
-        pal_keywords = {
-            "Pal",
-            "Otomo",
-            "Worker",
-            "BaseCamp",
+        log_top_candidates = 0,
+        wrapper_probe = {
+            enabled = true,
+            max_objects = 8,
+            max_depth = 2,
+            max_properties = 24,
+        },
+        live_probe = {
+            enabled = false,
+            only_when_unresolved_wrapper = true,
+            only_when_best_value_is_uobject = true,
+            only_preferred_paths = true,
+            max_targets = 1,
+            max_runs_per_test = 1,
+            max_properties_per_object = 18,
+            max_value_length = 96,
+            tests = {
+                chain_summary = true,
+                preferred_path_values = true,
+                save_parameter_chain_paths = true,
+                individual_id_typed_properties = true,
+                instance_wrapper_typed_properties = true,
+                instance_wrapper_child_typed_properties = true,
+                instance_wrapper_deep_paths = false,
+                instance_wrapper_terminal_paths = false,
+                actor_surface = false,
+                save_parameter_surface = false,
+                individual_id_surface = false,
+                instance_wrapper_surface = false,
+                save_parameter_selected_fields = false,
+                individual_id_selected_fields = false,
+                instance_wrapper_selected_fields = false,
+                save_parameter_property_names = false,
+                individual_id_property_names = false,
+                instance_wrapper_property_names = false,
+                instance_wrapper_guid_words = false,
+                individual_id_guid_words = false,
+            },
         },
         candidate_properties = {
             "IndividualId.InstanceId",
+            "CharacterParameterComponent.IndividualId.InstanceId",
+            "StaticCharacterParameterComponent.IndividualId.InstanceId",
+            "CharacterParameter.IndividualId.InstanceId",
+            "SaveParameter.IndividualId.InstanceId",
+            "PalCharacterParameter.IndividualId.InstanceId",
+            "IndividualCharacterParameter.IndividualId.InstanceId",
+            "IndividualCharacterParameterComponent.IndividualId.InstanceId",
             "InstanceId",
             "Guid",
             "GUID",
             "Uid",
             "UID",
             "IndividualId",
+            "SaveParameter.IndividualId",
+            "CharacterParameter.IndividualId",
             "CharacterID",
             "CharacterId",
             "SaveId",
@@ -62,10 +112,12 @@ local Config = {
         preferred_guid_paths = {
             "IndividualId.InstanceId",
             "CharacterParameterComponent.IndividualId.InstanceId",
+            "StaticCharacterParameterComponent.IndividualId.InstanceId",
+            "CharacterParameter.IndividualId.InstanceId",
+            "SaveParameter.IndividualId.InstanceId",
             "PalCharacterParameter.IndividualId.InstanceId",
             "IndividualCharacterParameter.IndividualId.InstanceId",
             "IndividualCharacterParameterComponent.IndividualId.InstanceId",
-            "StaticCharacterParameterComponent.IndividualId.InstanceId",
         },
         context_properties = {
             "CharacterContainerId",
@@ -85,16 +137,17 @@ local Config = {
             "CharacterName",
             "CharacterID",
             "CharacterId",
+            "StaticCharacterParameterComponent.CharacterID",
+            "CharacterParameterComponent.CharacterID",
         },
         component_properties = {
-            "OtomoPalHolderComponent",
             "CharacterParameterComponent",
+            "CharacterParameter",
+            "SaveParameter",
+            "StaticCharacterParameterComponent",
+            "PalCharacterParameter",
             "IndividualCharacterParameter",
             "IndividualCharacterParameterComponent",
-            "StaticCharacterParameterComponent",
-            "WorkerComponent",
-            "BaseCampComponent",
-            "PalCharacterParameter",
         },
         property_score = {
             ["IndividualId.InstanceId"] = 140,

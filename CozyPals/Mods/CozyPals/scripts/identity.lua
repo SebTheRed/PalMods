@@ -31,6 +31,38 @@ local function to_source_key(source_path, property)
     return tostring(source_path or "unknown") .. "::" .. tostring(property or "unknown")
 end
 
+local function split_native_source_path(source_path)
+    local source_text = tostring(source_path or "")
+    local property = "IndividualId.InstanceId"
+    local suffix = ".IndividualId.InstanceId"
+    if string.sub(source_text, -#suffix) == suffix then
+        return string.sub(source_text, 1, #source_text - #suffix), property
+    end
+    return source_text, property
+end
+
+local function is_preferred_identity_property(property_name)
+    local preferred = (_config and _config.discovery and _config.discovery.preferred_guid_paths) or {}
+    for i = 1, #preferred do
+        if property_name == preferred[i] then
+            return true
+        end
+    end
+    return false
+end
+
+local function is_native_trusted_source(source_path)
+    local trusted = (_config and _config.native_bridge and _config.native_bridge.trusted_identity_source_substrings) or {}
+    local source_text = tostring(source_path or "")
+    for i = 1, #trusted do
+        local needle = trusted[i]
+        if needle and needle ~= "" and string.find(source_text, needle, 1, true) ~= nil then
+            return true
+        end
+    end
+    return false
+end
+
 local function ensure_source_record(source_key, source_path, property)
     local verification = ensure_verification_tables(_state)
     local sources = verification.sources
@@ -155,6 +187,34 @@ function Identity.resolve_pal_guid(actor, pre_scanned)
     end
 
     local guid_text = tostring(best.value)
+    if _util.is_unreal_param_text(guid_text) or _util.is_uobject_text(guid_text) then
+        return {
+            status = "none",
+            guid = nil,
+            source_path = nil,
+            confidence = 0,
+            reason = "unresolved_identity_wrapper",
+        }
+    end
+    if not is_preferred_identity_property(best.property) then
+        return {
+            status = "none",
+            guid = nil,
+            source_path = nil,
+            confidence = 0,
+            reason = "non_preferred_identity_source",
+        }
+    end
+    if not _util.guid_like(guid_text) then
+        return {
+            status = "none",
+            guid = nil,
+            source_path = nil,
+            confidence = 0,
+            reason = "candidate_not_guid_like",
+        }
+    end
+
     local source_key = to_source_key(best.source_path, best.property)
     local source_record = ensure_source_record(source_key, best.source_path, best.property)
     source_record.last_seen = _util.now()
@@ -163,7 +223,7 @@ function Identity.resolve_pal_guid(actor, pre_scanned)
     local value_record = ensure_value_record(source_record, guid_text)
     update_value_record(value_record, context_hash)
 
-    if is_verified(value_record) then
+    if is_native_trusted_source(best.source_path) or is_verified(value_record) then
         if source_record.status ~= "verified" then
             source_record.status = "verified"
             source_record.verified_guid = guid_text
@@ -171,6 +231,7 @@ function Identity.resolve_pal_guid(actor, pre_scanned)
             _logger.info(
                 "[M1][GUID VERIFIED] source=" .. tostring(source_key) ..
                 " sample_guid=" .. tostring(guid_text) ..
+                " trusted_native=" .. tostring(is_native_trusted_source(best.source_path)) ..
                 " runs=" .. tostring(value_record.run_count) ..
                 " world_cycles=" .. tostring(value_record.world_cycle_count) ..
                 " contexts=" .. tostring(value_record.context_count)
@@ -202,6 +263,60 @@ function Identity.resolve_pal_guid(actor, pre_scanned)
             world_cycle_count = value_record.world_cycle_count,
             context_count = value_record.context_count,
         },
+    }
+end
+
+function Identity.accept_native_guid(guid_text, source_path, context_hash)
+    if not _state or not _runtime then
+        return {
+            status = "none",
+            guid = nil,
+            source_path = nil,
+            confidence = 0,
+            reason = "identity_not_initialized",
+        }
+    end
+
+    local guid_value = tostring(guid_text or "")
+    if not _util.guid_like(guid_value) then
+        return {
+            status = "none",
+            guid = nil,
+            source_path = nil,
+            confidence = 0,
+            reason = "candidate_not_guid_like",
+        }
+    end
+
+    local normalized_source_path, property = split_native_source_path(source_path)
+    local source_key = to_source_key(normalized_source_path, property)
+    local source_record = ensure_source_record(source_key, normalized_source_path, property)
+    source_record.last_seen = _util.now()
+
+    local value_record = ensure_value_record(source_record, guid_value)
+    update_value_record(value_record, context_hash or "native_cache")
+
+    if source_record.status ~= "verified" then
+        source_record.status = "verified"
+        source_record.verified_guid = guid_value
+        source_record.verified_at = _util.now()
+        _logger.info(
+            "[M1][GUID VERIFIED] source=" .. tostring(source_key) ..
+            " sample_guid=" .. tostring(guid_value) ..
+            " trusted_native=true" ..
+            " runs=" .. tostring(value_record.run_count) ..
+            " world_cycles=" .. tostring(value_record.world_cycle_count) ..
+            " contexts=" .. tostring(value_record.context_count)
+        )
+    end
+
+    update_report(source_key, source_record, value_record)
+
+    return {
+        status = "verified",
+        guid = guid_value,
+        source_path = tostring(normalized_source_path) .. "." .. tostring(property),
+        confidence = 1000,
     }
 end
 

@@ -14,6 +14,7 @@ local logger = require("logger")
 local json = require("json")
 local discovery = require("discovery")
 local identity = require("identity")
+local probe_lab = require("probe_lab")
 local persistence = require("persistence")
 local traits = require("traits")
 local debug_mod = require("debug_mod")
@@ -26,6 +27,7 @@ local trust = require("trust")
 logger.init(config)
 discovery.init(config, logger, util)
 identity.init(config, logger, util, discovery)
+probe_lab.init(config, logger, util)
 persistence.init(config, logger, util, json)
 traits.init(config, util)
 debug_mod.init(logger, util, identity)
@@ -43,7 +45,55 @@ local Runtime = {
     world_key = nil,
     state = nil,
     tick_count = 0,
+    pal_scan_count = 0,
+    native_identity_seen = {},
 }
+
+local function parse_pipe_fields(line, expected_fields)
+    local fields = {}
+    local start_index = 1
+    expected_fields = expected_fields or 0
+
+    while true do
+        local separator_index = string.find(line, "|", start_index, true)
+        if not separator_index then
+            fields[#fields + 1] = string.sub(line, start_index)
+            break
+        end
+        fields[#fields + 1] = string.sub(line, start_index, separator_index - 1)
+        start_index = separator_index + 1
+        if expected_fields > 0 and #fields >= expected_fields - 1 then
+            fields[#fields + 1] = string.sub(line, start_index)
+            break
+        end
+    end
+
+    return fields
+end
+
+local function infer_species_from_full_name(full_name)
+    local text = tostring(full_name or "")
+    local class_name = string.match(text, "([%w_]+)_C")
+    if class_name then
+        return class_name
+    end
+    return "Unknown"
+end
+
+local function run_async_if_available(fn)
+    local wrapped = function()
+        local ok, err = pcall(fn)
+        if not ok then
+            logger.err("Async callback failure: " .. tostring(err))
+        end
+    end
+
+    if type(ExecuteAsync) == "function" then
+        ExecuteAsync(wrapped)
+        return
+    end
+    wrapped()
+end
 
 local function call_probe(probe_fn)
     local ok, value = pcall(probe_fn)
@@ -192,6 +242,59 @@ local function process_verified_guid(result, resolved)
     end
 end
 
+local function import_native_identities()
+    if not Runtime.is_server then
+        return 0
+    end
+    if not ensure_world_state_loaded() then
+        return 0
+    end
+
+    local path = config.native_bridge and config.native_bridge.identities_file
+    if not path or path == "" then
+        return 0
+    end
+
+    local payload = util.read_file(path)
+    if not payload or payload == "" then
+        return 0
+    end
+
+    local imported_count = 0
+
+    for line in string.gmatch(payload, "[^\r\n]+") do
+        local fields = parse_pipe_fields(line, 4)
+        local address = tostring(fields[1] or "")
+        local full_name = tostring(fields[2] or "")
+        local guid = tostring(fields[3] or "")
+        local source_path = tostring(fields[4] or "actor.CharacterParameterComponent.IndividualParameter.IndividualId.InstanceId")
+        local seen_key = guid .. "|" .. full_name
+
+        if guid ~= "" and not Runtime.native_identity_seen[seen_key] then
+            local resolved = identity.accept_native_guid(guid, source_path, "native_cache|" .. full_name .. "|" .. address)
+            if resolved.status == "verified" then
+                process_verified_guid({
+                    species_hint = infer_species_from_full_name(full_name),
+                    context = {},
+                }, resolved)
+                Runtime.native_identity_seen[seen_key] = true
+                imported_count = imported_count + 1
+            end
+        end
+    end
+
+    if imported_count > 0 and Runtime.state and Runtime.state._dirty then
+        local ok, err = persistence.save_world_state(Runtime.state)
+        if ok then
+            logger.info("Native identity save flush complete. imported=" .. tostring(imported_count))
+        else
+            logger.err("Native identity save flush failed: " .. tostring(err))
+        end
+    end
+
+    return imported_count
+end
+
 local function on_world_ready(trigger_name)
     Runtime.world_cycle_index = Runtime.world_cycle_index + 1
     Runtime.world_cycle_id = Runtime.run_id .. "_wc" .. tostring(Runtime.world_cycle_index)
@@ -214,7 +317,7 @@ local function on_world_ready(trigger_name)
     )
 end
 
-local function on_actor_begin_play(actor)
+local function process_pal_actor(actor, trigger_name)
     if not config.discovery.enabled then
         return
     end
@@ -222,14 +325,23 @@ local function on_actor_begin_play(actor)
         return
     end
 
+    Runtime.pal_scan_count = Runtime.pal_scan_count + 1
+
     local result = discovery.scan_actor(actor)
     if not result then
         return
     end
 
     discovery.log_result(result)
+    if Runtime.is_server then
+        import_native_identities()
+    end
     local report_line = discovery.format_structured_report(result)
-    logger.discovery("report " .. tostring(report_line), "disc_report_" .. tostring(result.actor_key), 20)
+    logger.discovery(
+        "report trigger=" .. tostring(trigger_name) .. " " .. tostring(report_line),
+        "disc_report_" .. tostring(result.actor_key),
+        20
+    )
 
     local resolved = identity.resolve_pal_guid(actor, result)
     if resolved.status == "verified" then
@@ -247,11 +359,24 @@ local function on_actor_begin_play(actor)
         if Runtime.state then
             mark_state_dirty("verification_progress")
         end
+    elseif resolved.status == "none" then
+        logger.discovery(
+            "[M1][TRACE] Identity unresolved trigger=" .. tostring(trigger_name) ..
+            " reason=" .. tostring(resolved.reason) ..
+            " best_property=" .. tostring(result.best_candidate and result.best_candidate.property) ..
+            " best_value=" .. tostring(result.best_candidate and result.best_candidate.value),
+            "m1_trace_" .. tostring(result.actor_key),
+            20
+        )
+        probe_lab.maybe_probe(actor, result, trigger_name, resolved)
     end
 end
 
 local function periodic_tick()
     Runtime.tick_count = Runtime.tick_count + 1
+    if Runtime.is_server then
+        import_native_identities()
+    end
     if Runtime.is_server and Runtime.state then
         persistence.autosave_if_needed(Runtime.state)
     end
@@ -268,12 +393,51 @@ end
 
 local function try_register_hooks()
     local begin_ok, begin_err = pcall(function()
-        RegisterBeginPlayPreHook(safe_wrap(on_actor_begin_play, "BeginPlayPre"))
+        RegisterBeginPlayPreHook(safe_wrap(function(actor)
+            process_pal_actor(actor, "BeginPlayPre")
+        end, "BeginPlayPre"))
     end)
     if begin_ok then
-        logger.info("Registered BeginPlay pre-hook for actor discovery.")
+        logger.info("Registered BeginPlay pre-hook fallback for actor discovery.")
     else
-        logger.err("Failed to register BeginPlay pre-hook: " .. tostring(begin_err))
+        logger.warn("BeginPlay pre-hook unavailable: " .. tostring(begin_err))
+    end
+
+    local new_object_ok, new_object_err = pcall(function()
+        NotifyOnNewObject("/Script/Pal.PalCharacter", safe_wrap(function(character)
+            run_async_if_available(function()
+                process_pal_actor(character, "NotifyOnNewObject")
+            end)
+        end, "NotifyOnNewObjectPalCharacter"))
+    end)
+    if new_object_ok then
+        logger.info("Registered NotifyOnNewObject hook for /Script/Pal.PalCharacter.")
+    else
+        logger.warn("NotifyOnNewObject hook unavailable: " .. tostring(new_object_err))
+    end
+
+    local init_ok, init_err = pcall(function()
+        RegisterHook("/Script/Pal.PalCharacter:IsInitialized", safe_wrap(function(context)
+            local actor = context
+            local ok_get, got_actor = pcall(function()
+                if context and type(context.get) == "function" then
+                    return context:get()
+                end
+                return context
+            end)
+            if ok_get then
+                actor = got_actor
+            end
+
+            run_async_if_available(function()
+                process_pal_actor(actor, "PalCharacter:IsInitialized")
+            end)
+        end, "PalCharacterIsInitialized"))
+    end)
+    if init_ok then
+        logger.info("Registered /Script/Pal.PalCharacter:IsInitialized hook.")
+    else
+        logger.warn("PalCharacter:IsInitialized hook unavailable: " .. tostring(init_err))
     end
 
     local restart_ok, restart_err = pcall(function()
@@ -324,7 +488,7 @@ on_world_ready("module_load")
 
 _G.CozyPals = _G.CozyPals or {}
 _G.CozyPals.on_world_ready = on_world_ready
-_G.CozyPals.on_actor_begin_play = on_actor_begin_play
+_G.CozyPals.on_actor_begin_play = process_pal_actor
 _G.CozyPals.periodic_tick = periodic_tick
 _G.CozyPals.force_save = function()
     if not Runtime.state then

@@ -11,6 +11,9 @@ Copy `Mods/CozyPals` into your Palworld `Mods` directory.
 ## Operator checklist
 - `legwork-checklist.md` (exact dedicated test steps + log collection commands)
 
+## Reference docs
+- `docs/pal_save_parameter_reference.md` (field-by-field notes for the live pal `SaveParameter` dump)
+
 ## What Milestone 1 does
 - Scans candidate pal actors for UID/GUID-like properties.
 - Prioritizes `IndividualId.InstanceId` lookup paths when available.
