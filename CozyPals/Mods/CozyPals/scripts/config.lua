@@ -4,7 +4,7 @@ local Config = {
     data_schema_version = 1,
 
     authority = {
-        mode = "force_server", -- auto | force_server | force_client
+        mode = "auto", -- auto | force_server | force_client
         allow_unknown_as_server = false,
     },
 
@@ -34,6 +34,77 @@ local Config = {
         trusted_identity_source_substrings = {
             "CharacterParameterComponent.IndividualParameter",
         },
+    },
+
+    dialogue = {
+        data_paths = {
+            "../data/dialogue",
+            "../../../data/dialogue",
+        },
+        index_file = "dialogue_index.json",
+        lines_file = "dialogue_all_lines.jsonl",
+        default_player_name = "Trainer",
+        default_pal_name = "Pal",
+        default_location_name = "the base",
+        default_work_type = "work",
+        max_loaded_lines = 10000,
+        max_candidates = 128,
+    },
+
+    quest = {
+        enabled = true,
+        data_paths = {
+            "../data/dialogue",
+            "../../../data/dialogue",
+        },
+        roll_table_file = "fetch_item_roll_table_by_trust.jsonl",
+        rules_file = "fetch_item_draw_rules.json",
+        max_history = 20,
+        auto_issue_on_talk = true,
+        one_active_fetch_per_pal = true,
+        fetch_request_chance = 0.18,
+        fetch_request_chance_by_trust = {
+            trust_01_20 = 0.08,
+            trust_21_40 = 0.12,
+            trust_41_60 = 0.18,
+            trust_61_80 = 0.24,
+            trust_81_99 = 0.30,
+        },
+        reissue_after_completion_seconds = 1800,
+    },
+
+    interaction = {
+        enabled = true,
+        bridge_directory = nil,
+        requests_file = "interaction_requests.jsonl",
+        responses_file = "interaction_responses.jsonl",
+        input_state_file = "client_input_state.json",
+        client_state_file = "client_interaction_state.json",
+        legacy_hold_interaction_enabled = false,
+        hold_seconds = 0.45,
+        hold_reset_seconds = 0.75,
+        interaction_max_range = 1200,
+        line_trace_distance = 2200,
+        interaction_cooldown_seconds = 2,
+        pet_cooldown_seconds = 30,
+        pet_affection_gain = 3,
+        trust_gain_on_pet = 1,
+        allow_base_pals = true,
+        require_owned_pals = true,
+        wheel_actions = {
+            "Talk",
+            "Pet",
+        },
+        use_builtin_radial_ui = true,
+        use_builtin_talk_ui = true,
+        talk_face_player = true,
+        talk_emote_enabled = true,
+        pet_affection_enabled = true,
+        input_poll_interval_seconds = 0.1,
+        response_poll_interval_seconds = 0.25,
+        identities_poll_interval_seconds = 0.5,
+        requests_poll_interval_seconds = 0.25,
+        debug_log_focus = false,
     },
 
     verification = {

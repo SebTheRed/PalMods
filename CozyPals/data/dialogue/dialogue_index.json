@@ -1,8 +1,8 @@
 {
-    "version": 10,
-    "generated_at_utc": "2026-03-20T19:15:17Z",
+    "version": 12,
+    "generated_at_utc": "2026-03-21T01:40:58Z",
     "target_line_volume": "3k-5k",
-    "actual_line_count": 4518,
+    "actual_line_count": 4528,
     "composition": {
         "archetype_lines": 2790,
         "species_lines": 1728,
@@ -73,7 +73,8 @@
             "loneliness",
             "playfulness",
             "fetch_ask",
-            "fetch_thanks"
+            "fetch_thanks",
+            "fetch_pending"
         ],
         "emotional_tone": [
             "cheerful",
@@ -119,7 +120,8 @@
             "ranch_success",
             "work_complete",
             "quest_request",
-            "quest_thanks"
+            "quest_thanks",
+            "quest_pending"
         ]
     },
     "thresholds": {
@@ -222,6 +224,7 @@
         "dialogue_lines": "dialogue_lines.jsonl",
         "dialogue_all_lines": "dialogue_all_lines.jsonl",
         "dialogue_fetch_request_lines": "dialogue_fetch_request_lines.jsonl",
+        "dialogue_fetch_pending_lines": "dialogue_fetch_pending_lines.jsonl",
         "dialogue_fetch_thanks_lines": "dialogue_fetch_thanks_lines.jsonl",
         "generation_notes": "generation_notes.md",
         "fetch_items_master": "fetch_items_master.jsonl",
@@ -338,7 +341,11 @@
             "quest_request_comfort",
             "quest_request_practical",
             "quest_request_trusting",
-            "quest_request_embarrassed"
+            "quest_request_embarrassed",
+            "quest_pending_patient",
+            "quest_pending_nervous",
+            "quest_pending_direct",
+            "quest_pending_eager"
         ],
         "time_weather_environment": [
             "time_morning",
@@ -352,8 +359,8 @@
             "env_cozy_indoors"
         ]
     },
-    "total_line_count_including_fetch": 4518,
-    "fetch_line_count": 792,
+    "total_line_count_including_fetch": 4528,
+    "fetch_line_count": 802,
     "core_composition": {
         "archetype_lines": 2430,
         "species_lines": 1296,
@@ -362,8 +369,9 @@
     },
     "file_line_counts": {
         "dialogue_lines": 3726,
-        "dialogue_all_lines": 4518,
+        "dialogue_all_lines": 4528,
         "dialogue_fetch_request_lines": 396,
+        "dialogue_fetch_pending_lines": 10,
         "dialogue_fetch_thanks_lines": 396
     },
     "core_line_count": 3726,
@@ -386,7 +394,33 @@
             "low_trust_allowed_rarities": [
                 "common",
                 "uncommon"
-            ]
+            ],
+            "quest_quantity_range_by_rarity": {
+                "common": {
+                    "min": 1,
+                    "max": 30
+                },
+                "uncommon": {
+                    "min": 1,
+                    "max": 7
+                },
+                "rare": {
+                    "min": 1,
+                    "max": 3
+                },
+                "epic": {
+                    "min": 1,
+                    "max": 3
+                },
+                "legendary": {
+                    "min": 1,
+                    "max": 3
+                },
+                "special": {
+                    "min": 0,
+                    "max": 0
+                }
+            }
         },
         "files": {
             "master": "fetch_items_master.jsonl",

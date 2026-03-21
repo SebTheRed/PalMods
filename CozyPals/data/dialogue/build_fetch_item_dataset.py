@@ -58,6 +58,15 @@ BASE_RARITY_WEIGHT = {
     'special': 0.0,
 }
 
+QUEST_QUANTITY_RANGE_BY_RARITY = {
+    'common': {'min': 1, 'max': 30},
+    'uncommon': {'min': 1, 'max': 7},
+    'rare': {'min': 1, 'max': 3},
+    'epic': {'min': 1, 'max': 3},
+    'legendary': {'min': 1, 'max': 3},
+    'special': {'min': 0, 'max': 0},
+}
+
 # Trust as gate, not default bias. Common remains the dominant request class even at high trust.
 TRUST_RARITY_MULTIPLIER = {
     'trust_01_20': {'common': 1.00, 'uncommon': 0.45, 'rare': 0.00, 'epic': 0.00, 'legendary': 0.00, 'special': 0.00},
@@ -115,6 +124,8 @@ class ItemRecord:
     gatherable_kind: str
     trust_points_reward: int
     base_rarity_weight: float
+    quest_quantity_min: int
+    quest_quantity_max: int
 
 
 def fetch_html(url: str) -> str:
@@ -172,6 +183,7 @@ def parse_items(html_doc: str) -> list[ItemRecord]:
         )
 
         gatherable_kind = infer_gatherable_kind(item_name, item_slug)
+        quest_quantity_min, quest_quantity_max = quantity_range_for_rarity(rarity_tier)
 
         out.append(
             ItemRecord(
@@ -192,6 +204,8 @@ def parse_items(html_doc: str) -> list[ItemRecord]:
                 gatherable_kind=gatherable_kind,
                 trust_points_reward=RARITY_TRUST_POINTS[rarity_tier],
                 base_rarity_weight=BASE_RARITY_WEIGHT[rarity_tier],
+                quest_quantity_min=quest_quantity_min,
+                quest_quantity_max=quest_quantity_max,
             )
         )
 
@@ -240,6 +254,11 @@ def infer_gatherable_kind(item_name: str, item_slug: str) -> str:
     return 'gatherable_misc'
 
 
+def quantity_range_for_rarity(rarity_tier: str) -> tuple[int, int]:
+    quantity = QUEST_QUANTITY_RANGE_BY_RARITY.get(rarity_tier, {'min': 1, 'max': 1})
+    return int(quantity['min']), int(quantity['max'])
+
+
 def build_roll_table(items: list[ItemRecord]) -> tuple[list[dict], dict]:
     eligible_items = [it for it in items if it.fetch_eligible]
 
@@ -250,6 +269,7 @@ def build_roll_table(items: list[ItemRecord]) -> tuple[list[dict], dict]:
         'eligible_items_total_pre_dedupe': len(eligible_items),
         'dedupe_policy': 'none',
         'eligible_by_rarity': {},
+        'quantity_range_by_rarity': QUEST_QUANTITY_RANGE_BY_RARITY,
     }
 
     rarity_counter = Counter(it.rarity_tier for it in eligible_items)
@@ -287,6 +307,8 @@ def build_roll_table(items: list[ItemRecord]) -> tuple[list[dict], dict]:
                     'item_name': item.item_name,
                     'rarity_tier': item.rarity_tier,
                     'trust_points_reward': item.trust_points_reward,
+                    'quest_quantity_min': item.quest_quantity_min,
+                    'quest_quantity_max': item.quest_quantity_max,
                     'draw_weight': round(weight, 6),
                     'draw_probability': round(prob, 10),
                     'gatherable_kind': item.gatherable_kind,
@@ -336,6 +358,8 @@ def main() -> None:
             'gatherable_kind': it.gatherable_kind,
             'trust_points_reward': it.trust_points_reward,
             'base_rarity_weight': it.base_rarity_weight,
+            'quest_quantity_min': it.quest_quantity_min,
+            'quest_quantity_max': it.quest_quantity_max,
             'source': it.source,
         }
         for it in items
@@ -354,9 +378,11 @@ def main() -> None:
             'Master file includes all parsed items from source snapshot.',
             'Fetch pool is restricted to gatherable and non-crafted items.',
             'Trust gates rarity availability; common remains dominant at all trust levels.',
+            'Requested quantity shrinks as rarity rises: common 1-30, uncommon 1-7, rare+ 1-3.',
         ],
         'trust_points_by_rarity': RARITY_TRUST_POINTS,
         'base_rarity_weight': BASE_RARITY_WEIGHT,
+        'quest_quantity_range_by_rarity': QUEST_QUANTITY_RANGE_BY_RARITY,
         'trust_rarity_multiplier': TRUST_RARITY_MULTIPLIER,
         'allowed_icon_groups_for_fetch': sorted(ALLOWED_ICON_GROUPS),
         'filters': {
@@ -395,6 +421,7 @@ def main() -> None:
     notes.append('- Fetch pool currently excludes crafted/processed outputs.')
     notes.append('- Fetch pool excludes key/quest/blueprint/equipment and other non-fetchable categories.')
     notes.append('- Trust is a rarity gate only; common remains dominant even at high trust.')
+    notes.append('- Requested quantity scales down by rarity: common 1-30, uncommon 1-7, rare+ 1-3.')
     notes.append('- Duplicate display slugs are preserved with master_item_key disambiguation.')
     notes.append('')
     notes.append('## Outputs')
@@ -438,6 +465,7 @@ def update_dialogue_index(master_count: int, summary: dict) -> None:
             'trust_gate_not_rarity_bias': True,
             'legendary_unlocked_only_at': 'trust_81_99',
             'low_trust_allowed_rarities': ['common', 'uncommon'],
+            'quest_quantity_range_by_rarity': QUEST_QUANTITY_RANGE_BY_RARITY,
         },
         'files': {
             'master': MASTER_JSONL.name,
@@ -473,13 +501,15 @@ Last updated: {datetime.now().date().isoformat()}
 
 ## Record Shapes
 - `fetch_items_master.jsonl`:
-- `item_index, item_key, item_slug, item_name, item_url, rarity_value, rarity_tier, icon_group, icon_token, icon_src, description, fetch_eligible, exclusion_reasons, gatherable_kind, trust_points_reward, base_rarity_weight, source`
+- `item_index, item_key, item_slug, item_name, item_url, rarity_value, rarity_tier, icon_group, icon_token, icon_src, description, fetch_eligible, exclusion_reasons, gatherable_kind, trust_points_reward, base_rarity_weight, quest_quantity_min, quest_quantity_max, source`
 - `fetch_item_roll_table_by_trust.jsonl`:
-- `trust_band, trust_min, trust_max, master_item_index, master_item_key, item_slug, item_name, rarity_tier, trust_points_reward, draw_weight, draw_probability, gatherable_kind`
+- `trust_band, trust_min, trust_max, master_item_index, master_item_key, item_slug, item_name, rarity_tier, trust_points_reward, quest_quantity_min, quest_quantity_max, draw_weight, draw_probability, gatherable_kind`
 
 ## Trust And Rarity Rules (Locked)
 - Trust points by rarity:
 - `common=1, uncommon=2, rare=4, epic=7, legendary=12`
+- Quest quantity by rarity:
+- `common=1-30, uncommon=1-7, rare=1-3, epic=1-3, legendary=1-3`
 - Low trust (`1-40`) asks only `common|uncommon`.
 - Mid trust (`41-60`) can include `rare`.
 - High trust (`61-80`) can include `epic`.

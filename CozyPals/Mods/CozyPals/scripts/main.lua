@@ -31,10 +31,10 @@ probe_lab.init(config, logger, util)
 persistence.init(config, logger, util, json)
 traits.init(config, util)
 debug_mod.init(logger, util, identity)
-dialogue.init(config)
-interactions.init(config)
-quests.init(config)
-trust.init(config)
+dialogue.init(config, logger, util, json)
+quests.init(config, logger, util, json, dialogue)
+interactions.init(config, logger, util, json, dialogue, trust, persistence, quests)
+trust.init(config, logger, util)
 
 local Runtime = {
     run_id = tostring(util.now()) .. "_" .. tostring(math.floor((os.clock() * 1000000) % 1000000)),
@@ -307,10 +307,12 @@ local function on_world_ready(trigger_name)
             "observer_mode_" .. tostring(trigger_name),
             60
         )
+        interactions.on_world_ready(Runtime)
         return
     end
 
     ensure_world_state_loaded()
+    interactions.on_world_ready(Runtime)
     logger.info(
         "World ready cycle started. trigger=" .. tostring(trigger_name) ..
         " world_cycle_id=" .. tostring(Runtime.world_cycle_id)
@@ -377,6 +379,7 @@ local function periodic_tick()
     if Runtime.is_server then
         import_native_identities()
     end
+    interactions.periodic_tick(Runtime)
     if Runtime.is_server and Runtime.state then
         persistence.autosave_if_needed(Runtime.state)
     end
@@ -476,6 +479,7 @@ end
 
 Runtime.is_server, Runtime.authority_reason = detect_server_authority()
 identity.set_runtime(Runtime)
+interactions.bind_runtime(Runtime, identity)
 
 logger.info(
     "Starting CozyPals " .. tostring(config.mod_version) ..

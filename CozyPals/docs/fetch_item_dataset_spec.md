@@ -20,13 +20,15 @@ Last updated: 2026-03-20
 
 ## Record Shapes
 - `fetch_items_master.jsonl`:
-- `item_index, item_key, item_slug, item_name, item_url, rarity_value, rarity_tier, icon_group, icon_token, icon_src, description, fetch_eligible, exclusion_reasons, gatherable_kind, trust_points_reward, base_rarity_weight, source`
+- `item_index, item_key, item_slug, item_name, item_url, rarity_value, rarity_tier, icon_group, icon_token, icon_src, description, fetch_eligible, exclusion_reasons, gatherable_kind, trust_points_reward, base_rarity_weight, quest_quantity_min, quest_quantity_max, source`
 - `fetch_item_roll_table_by_trust.jsonl`:
-- `trust_band, trust_min, trust_max, master_item_index, master_item_key, item_slug, item_name, rarity_tier, trust_points_reward, draw_weight, draw_probability, gatherable_kind`
+- `trust_band, trust_min, trust_max, master_item_index, master_item_key, item_slug, item_name, rarity_tier, trust_points_reward, quest_quantity_min, quest_quantity_max, draw_weight, draw_probability, gatherable_kind`
 
 ## Trust And Rarity Rules (Locked)
 - Trust points by rarity:
 - `common=1, uncommon=2, rare=4, epic=7, legendary=12`
+- Quest quantity by rarity:
+- `common=1-30, uncommon=1-7, rare=1-3, epic=1-3, legendary=1-3`
 - Low trust (`1-40`) asks only `common|uncommon`.
 - Mid trust (`41-60`) can include `rare`.
 - High trust (`61-80`) can include `epic`.

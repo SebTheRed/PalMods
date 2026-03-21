@@ -93,6 +93,16 @@ function Util.write_file(path, text)
     return true, nil
 end
 
+function Util.append_file(path, text)
+    local file, open_err = io.open(path, "ab")
+    if not file then
+        return false, open_err
+    end
+    file:write(text)
+    file:close()
+    return true, nil
+end
+
 function Util.ensure_directory(path)
     if not path or path == "" then
         return false, "missing path"
@@ -103,6 +113,20 @@ function Util.ensure_directory(path)
         return execute_silent('if not exist "' .. path .. '" mkdir "' .. path .. '"')
     end
     return execute_silent('mkdir -p "' .. path .. '"')
+end
+
+function Util.default_bridge_directory()
+    local local_app_data = os.getenv("LOCALAPPDATA")
+    if local_app_data and local_app_data ~= "" then
+        return Util.path_join(local_app_data, "CozyPalsBridge")
+    end
+
+    local temp = os.getenv("TEMP")
+    if temp and temp ~= "" then
+        return Util.path_join(temp, "CozyPalsBridge")
+    end
+
+    return "CozyPalsBridge"
 end
 
 function Util.atomic_write(path, text, backup_suffix, temp_suffix)

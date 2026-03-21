@@ -25,10 +25,12 @@ repeat_lockout, tone_flags
 
 ## Fetch Quest Dialogue
 - quest_request trigger: pal asks for item fetch.
+- quest_pending trigger: pal reminds player a requested fetch item is still outstanding.
 - quest_thanks trigger: pal thanks player after item hand-in.
 - item token usage: {item_name}
 - fetch lines are stored in dedicated files:
   - dialogue_fetch_request_lines.jsonl
+  - dialogue_fetch_pending_lines.jsonl
   - dialogue_fetch_thanks_lines.jsonl
 
 ## Trust x Personality Rule
