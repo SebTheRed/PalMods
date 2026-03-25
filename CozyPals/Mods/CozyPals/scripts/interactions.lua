@@ -14,6 +14,7 @@ local _runtime = nil
 local _bridge_dir = nil
 local _requests_path = nil
 local _responses_path = nil
+local _native_actions_path = nil
 local _input_state_path = nil
 local _client_state_path = nil
 
@@ -27,6 +28,7 @@ local _client = {
     last_response_load = 0,
     last_input_poll = 0,
     request_counter = 0,
+    last_native_action_load = 0,
     menu_open = false,
     menu_opened_at = 0,
     hold_started_at = 0,
@@ -37,6 +39,7 @@ local _client = {
         alt = 0,
     },
     handled_responses = {},
+    handled_native_actions = {},
     last_state_payload = nil,
 }
 local _server = {
@@ -84,6 +87,7 @@ local function ensure_bridge()
     _bridge_dir = _bridge_dir or infer_bridge_directory()
     _requests_path = _requests_path or _util.path_join(_bridge_dir, _config.interaction.requests_file)
     _responses_path = _responses_path or _util.path_join(_bridge_dir, _config.interaction.responses_file)
+    _native_actions_path = _native_actions_path or _util.path_join(_bridge_dir, (_config.interaction.native_wheel_actions_file or "native_wheel_actions.jsonl"))
     _input_state_path = _input_state_path or _util.path_join(_bridge_dir, _config.interaction.input_state_file)
     _client_state_path = _client_state_path or _util.path_join(_bridge_dir, _config.interaction.client_state_file)
     _util.ensure_directory(_bridge_dir)
@@ -716,6 +720,36 @@ local function handle_client_responses()
     end
 end
 
+local function handle_native_wheel_actions()
+    ensure_bridge()
+
+    local rows = parse_json_lines(_native_actions_path)
+    for i = 1, #rows do
+        local action_row = rows[i]
+        local action_id = tostring(action_row.id or "")
+        if action_id ~= "" and not _client.handled_native_actions[action_id] then
+            _client.handled_native_actions[action_id] = true
+
+            local action = tostring(action_row.action or "")
+            if action == "talk" then
+                local target = focused_target()
+                if target then
+                    submit_request("talk", target)
+                else
+                    show_client_message("Couldn't find a pal to talk to.")
+                end
+            elseif action == "pet" then
+                local target = focused_target()
+                if target then
+                    submit_request("pet", target)
+                else
+                    show_client_message("Couldn't find a pal to interact with.")
+                end
+            end
+        end
+    end
+end
+
 local function client_tick()
     if _runtime and _runtime.is_server then
         return
@@ -730,6 +764,11 @@ local function client_tick()
     if now_seconds() - _client.last_response_load >= (_config.interaction.response_poll_interval_seconds or 0.25) then
         handle_client_responses()
         _client.last_response_load = now_seconds()
+    end
+
+    if now_seconds() - _client.last_native_action_load >= (_config.interaction.response_poll_interval_seconds or 0.25) then
+        handle_native_wheel_actions()
+        _client.last_native_action_load = now_seconds()
     end
 
     if _config.interaction.legacy_hold_interaction_enabled == false then
@@ -823,10 +862,13 @@ function Interactions.on_world_ready(runtime)
     if _runtime and _runtime.is_server then
         _util.write_file(_requests_path, "")
         _util.write_file(_responses_path, "")
+        _util.write_file(_native_actions_path, "")
         _server.seen_request_ids = {}
     else
         _util.write_file(_requests_path, "")
+        _util.write_file(_native_actions_path, "")
         _client.handled_responses = {}
+        _client.handled_native_actions = {}
         load_native_identity_lookup()
         write_client_state(nil, {
             client_ready = true,

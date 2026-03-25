@@ -4,7 +4,7 @@ local Config = {
     data_schema_version = 1,
 
     authority = {
-        mode = "auto", -- auto | force_server | force_client
+        mode = "force_server", -- auto | force_server | force_client
         allow_unknown_as_server = false,
     },
 
@@ -78,6 +78,7 @@ local Config = {
         bridge_directory = nil,
         requests_file = "interaction_requests.jsonl",
         responses_file = "interaction_responses.jsonl",
+        native_wheel_actions_file = "native_wheel_actions.jsonl",
         input_state_file = "client_input_state.json",
         client_state_file = "client_interaction_state.json",
         legacy_hold_interaction_enabled = false,

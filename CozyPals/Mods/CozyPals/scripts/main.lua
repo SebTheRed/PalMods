@@ -454,26 +454,31 @@ local function try_register_hooks()
         logger.warn("ClientRestart hook unavailable: " .. tostring(restart_err))
     end
 
-    local tick_paths = {
-        "/Script/Engine.World:Tick",
-        "/Script/Engine.Actor:ReceiveTick",
-    }
-    local tick_registered = false
-    for i = 1, #tick_paths do
-        local path = tick_paths[i]
-        local ok = pcall(function()
-            RegisterHook(path, safe_wrap(function()
-                periodic_tick()
-            end, "Tick"))
-        end)
-        if ok then
-            tick_registered = true
-            logger.info("Registered tick hook path=" .. tostring(path))
-            break
+    local needs_tick = Runtime.is_server or (_config.interaction and _config.interaction.enabled)
+    if needs_tick then
+        local tick_paths = {
+            "/Script/Engine.World:Tick",
+            "/Script/Engine.Actor:ReceiveTick",
+        }
+        local tick_registered = false
+        for i = 1, #tick_paths do
+            local path = tick_paths[i]
+            local ok = pcall(function()
+                RegisterHook(path, safe_wrap(function()
+                    periodic_tick()
+                end, "Tick"))
+            end)
+            if ok then
+                tick_registered = true
+                logger.info("Registered tick hook path=" .. tostring(path))
+                break
+            end
         end
-    end
-    if not tick_registered then
-        logger.warn("No supported tick hook found; autosave depends on event-driven dirty flush.")
+        if not tick_registered then
+            logger.warn("No supported tick hook found; autosave depends on event-driven dirty flush.")
+        end
+    else
+        logger.info("Skipping tick hook in observer client mode.")
     end
 end
 

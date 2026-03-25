@@ -77,6 +77,20 @@ Not fully implemented yet:
 
 The runtime was structured so those can be swapped in without changing server validation or dialogue/trust logic.
 
+## Safety Gate
+
+The experimental client runtime is now hard-gated.
+
+By default:
+
+- client `CozyPals` is disabled in the live install
+- client `CozyPalsNative` is disabled in the live install
+- even if `CozyPalsNative` is re-enabled, the experimental client runtime path stays off unless this file exists:
+
+`Mods/CozyPals/data/enable_client_runtime.flag`
+
+That means normal play should stay safe, and the next wheel/talk runtime test must be an explicit opt-in step instead of something that silently boots every launch.
+
 ## Native Candidate Dumps
 
 The native helper now also emits one-shot runtime candidate dumps for the next stage of real integration work:
